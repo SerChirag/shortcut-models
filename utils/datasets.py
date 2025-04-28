@@ -78,5 +78,26 @@ def get_dataset(dataset_name, batch_size, is_train, debug_overfit=False):
         dataset = tfds.as_numpy(dataset)
         dataset = iter(dataset)
         return dataset
+    
+    elif dataset_name == 'pokemon':
+        def deserialization_fn(data):
+            image = data['image']
+            image = tf.image.random_flip_left_right(image)
+            image = tf.cast(image, tf.float32)
+            image = image / 255.0
+            image = (image - 0.5) / 0.5  # Normalize to [-1, 1]
+            return image, data['label']
+
+        split = 'train'
+        dataset = tfds.load('pokemon', split=split)  # or wherever your pokemon data is
+        dataset = dataset.map(deserialization_fn, num_parallel_calls=tf.data.AUTOTUNE)
+        dataset = dataset.shuffle(10000, seed=42, reshuffle_each_iteration=True)
+        dataset = dataset.repeat()
+        dataset = dataset.batch(batch_size)
+        dataset = dataset.prefetch(tf.data.AUTOTUNE)
+        dataset = tfds.as_numpy(dataset)
+        dataset = iter(dataset)
+        return dataset
+
     else:
         raise ValueError(f"Unknown dataset {dataset_name}")
